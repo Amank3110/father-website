@@ -980,31 +980,33 @@
   </div>
   <div class="enrol-container">
     <div class="enrol-form-wrap">
-      <div id="enrolForm">
+      <form id="enrolForm" name="enrolment" method="POST" data-netlify="true" netlify-honeypot="bot-field" onsubmit="handleSubmit(event)">
+        <input type="hidden" name="form-name" value="enrolment" />
+        <p style="display:none;"><input name="bot-field" /></p>
         <div class="form-row">
           <div class="form-group">
             <label for="studentName">Student's Full Name *</label>
-            <input type="text" id="studentName" placeholder="Enter full name" required />
+            <input type="text" id="studentName" name="student-name" placeholder="Enter full name" required />
           </div>
           <div class="form-group">
             <label for="parentName">Parent / Guardian Name *</label>
-            <input type="text" id="parentName" placeholder="Enter parent's name" required />
+            <input type="text" id="parentName" name="parent-name" placeholder="Enter parent's name" required />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label for="phone">Contact Number *</label>
-            <input type="tel" id="phone" placeholder="+91 XXXXX XXXXX" required />
+            <input type="tel" id="phone" name="phone" placeholder="+91 XXXXX XXXXX" required />
           </div>
           <div class="form-group">
             <label for="email">Email Address</label>
-            <input type="email" id="email" placeholder="email@example.com" />
+            <input type="email" id="email" name="email" placeholder="email@example.com" />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label for="classApplying">Class Applying For *</label>
-            <select id="classApplying" required>
+            <select id="classApplying" name="class" required>
               <option value="">Select class</option>
               <option>Class 6</option><option>Class 7</option><option>Class 8</option>
               <option>Class 9</option><option>Class 10</option><option>Class 11</option><option>Class 12</option>
@@ -1012,7 +1014,7 @@
           </div>
           <div class="form-group">
             <label for="course">Course / Program *</label>
-            <select id="course" required>
+            <select id="course" name="course" required>
               <option value="">Select program</option>
               <option>IIT JEE</option><option>NEET</option><option>NTSE</option>
               <option>Olympiad</option><option>PPMET</option><option>Commerce</option><option>General (School Subjects)</option>
@@ -1021,10 +1023,10 @@
         </div>
         <div class="form-group">
           <label for="message">Any Message or Query</label>
-          <textarea id="message" placeholder="Tell us about your goals or any specific requirements..."></textarea>
+          <textarea id="message" name="message" placeholder="Tell us about your goals or any specific requirements..."></textarea>
         </div>
-        <button class="form-submit" onclick="handleSubmit()">SUBMIT ENROLMENT REQUEST</button>
-      </div>
+        <button type="submit" class="form-submit">SUBMIT ENROLMENT REQUEST</button>
+      </form>
       <div class="form-success" id="formSuccess">
         <div class="success-icon">✓</div>
         <h3>Enrolment Request Received!</h3>
@@ -1263,7 +1265,8 @@
   });
 
   // Form submit
-  function handleSubmit() {
+  function handleSubmit(e) {
+    e.preventDefault();
     const name = document.getElementById('studentName').value.trim();
     const parent = document.getElementById('parentName').value.trim();
     const phone = document.getElementById('phone').value.trim();
@@ -1272,8 +1275,8 @@
     const message = document.getElementById('message').value.trim();
 
     // Clear previous errors
-    document.querySelectorAll('.field-error').forEach(e => e.remove());
-    document.querySelectorAll('input, select, textarea').forEach(e => e.style.borderColor = '');
+    document.querySelectorAll('.field-error').forEach(el => el.remove());
+    document.querySelectorAll('input, select, textarea').forEach(el => el.style.borderColor = '');
 
     let hasError = false;
     function showError(id, msg) {
@@ -1290,27 +1293,31 @@
     if (!name) showError('studentName', 'Student name is required');
     if (!parent) showError('parentName', 'Parent name is required');
     if (!phone) showError('phone', 'Contact number is required');
-    else if (!/^[0-9+\s\-]{8,15}$/.test(phone)) showError('phone', 'Enter a valid phone number');
+    else if (phone.replace(/[\s\-+]/g, '').length < 8) showError('phone', 'Enter a valid phone number');
     if (!cls) showError('classApplying', 'Please select a class');
     if (!course) showError('course', 'Please select a program');
 
     if (hasError) return;
 
-    // Send WhatsApp message to institute
-    const wa_msg = encodeURIComponent(
-      "📋 *New Enrolment Request - UniQuest Institute*\n\n" +
-      "👤 Student: " + name + "\n" +
-      "👨‍👩‍👦 Parent: " + parent + "\n" +
-      "📞 Phone: " + phone + "\n" +
-      "🎓 Class: " + cls + "\n" +
-      "📚 Course: " + course +
-      (message ? "\n💬 Message: " + message : "")
-    );
-    window.open("https://wa.me/919877007272?text=" + wa_msg, "_blank");
-
-    document.getElementById('enrolForm').style.display = 'none';
-    document.getElementById('formSuccess').style.display = 'block';
-    document.getElementById('enrol').scrollIntoView({behavior:'smooth'});
+    // Submit to Netlify
+    const formData = new FormData(document.getElementById('enrolForm'));
+    fetch('/', { method: 'POST', body: formData })
+      .finally(() => {
+        document.getElementById('enrolForm').style.display = 'none';
+        document.getElementById('formSuccess').style.display = 'block';
+        document.getElementById('enrol').scrollIntoView({behavior:'smooth'});
+        // Also open WhatsApp
+        const wa_msg = encodeURIComponent(
+          "📋 *New Enrolment Request - UniQuest Institute*\n\n" +
+          "👤 Student: " + name + "\n" +
+          "👨‍👩‍👦 Parent: " + parent + "\n" +
+          "📞 Phone: " + phone + "\n" +
+          "🎓 Class: " + cls + "\n" +
+          "📚 Course: " + course +
+          (message ? "\n💬 Message: " + message : "")
+        );
+        window.open("https://wa.me/919877007272?text=" + wa_msg, "_blank");
+      });
   }
 
   // Scroll reveal
